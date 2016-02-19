@@ -15,7 +15,7 @@ bool AppDelegate::applicationDidFinishLaunching() {
 		glview->setFrameSize(1200, 600);
 		director->setOpenGLView(glview);
 	}
-	//director->setAnimationInterval(0.05f);
+	director->setAnimationInterval(0.01f);
 	auto scene = KeyboardScene::createScene();
 	director->runWithScene(scene);
 	return true;

@@ -25,38 +25,39 @@ bool KeyboardScene::doesCollide(cocos2d::Vec2 position1, cocos2d::Vec2 position2
 }
 
 bool KeyboardScene::doesCollideBlock(cocos2d::Vec2 blockpos, cocos2d::Vec2 ballpos) {
-	return ((std::abs(blockpos.x - ballpos.x) < (bw + sb)/2) && (std::abs(blockpos.y - ballpos.y ) < (bh + sb)/2));
+	return ((std::abs(blockpos.x - ballpos.x) <= (bw + sb)/2) && (std::abs(blockpos.y - ballpos.y ) <= (bh + sb)/2));
 }
 
 Scene* KeyboardScene::createScene(){
 	auto scene = Scene::create();
 	auto layer = KeyboardScene::create();
-	scene->addChild(layer);
-	return scene;
+scene->addChild(layer);
+return scene;
 }
 
-bool KeyboardScene::init(){
+bool KeyboardScene::init() {
 	if (!Layer::init())
 		return false;
-	audio->preloadBackgroundMusic("fight.mp3");
-	audio->preloadEffect("die.mp3");
-	audio->preloadEffect("eat.mp3");
-	//audio->playBackgroundMusic("fight.mp3");
-	bg->setPosition(sw/2, sh/2);
+	audio->preloadBackgroundMusic("bgm.mp3");
+	audio->preloadEffect("boop.mp3");
+	audio->playBackgroundMusic("bgm.mp3");
+	bg->setPosition(sw / 2, sh / 2);
 	bg->setAnchorPoint(Vec2(0.5, 0.5));
 	this->addChild(bg);
 	sprite->setAnchorPoint(Vec2(0.5, 0.0));
-	sprite->setPosition(sw/2, 0);
+	sprite->setPosition(sw / 2, 0);
 	this->addChild(sprite);
 	ball->setAnchorPoint(Vec2(0.5, 0.5));
-	ball->setPosition(sw / 2, sh/2);
-	//ball->setPosition(sw/2, sh-ss*2);
+	ball->setPosition(sw / 2, sh / 2);
+	showscore->setPosition(125, 20);
+	this->addChild(showscore);
 	this->addChild(ball);
 	int wasd = 12;
-	int hasd = 4;
+	int hasd = 6;
 	for (int i = 0; i < wasd; i++) {
 		for (int j = 0; j < hasd; j++) {
-			if (i %2 == 0) {
+			if ((i+j)%2==0 || (i + j) % 3 == 0)
+			{
 				auto temp = createRandomBlock();
 				temp->setAnchorPoint(Vec2(0.5, 0.5));
 				temp->setPosition(i*bw + bw / 2, j*bh + bh * 14);
@@ -76,8 +77,10 @@ bool KeyboardScene::init(){
 			right = true;
 			break;
 		case EventKeyboard::KeyCode::KEY_SPACE:
-			ball->setPosition(sw / 2, sh / 2);
-			balldir = initdir;
+			if (life !=0 && balldir != balldir ){
+				ball->setPosition(sw / 2, sh / 2);
+				balldir = initdir;
+			}
 			break;
 		}
 	};
@@ -99,8 +102,6 @@ bool KeyboardScene::init(){
 }
 
 void KeyboardScene::update(float delta) {
-	CCLOG("");
-	auto retardationConstant = 1.0;//1 dapat pero retarded ako
 	bool blockdie = false;
 	int boo = -1;
 	for (int b = 0; b < blocks.size(); b++) {
@@ -110,39 +111,56 @@ void KeyboardScene::update(float delta) {
 			break;
 		}
 	}
-	if (cd>0 && (ball->getPosition().y<sb / 2 || ball->getPosition().y>sh-sb/2)) {
+	if (ball->getPosition().y < sb / 2) {
+		life = life - 1;
+		if (life>0)
+		showscore->setString("Lives: " + std::to_string(life));
+		balldir = sqrt(-1);
+		ball->setPosition(-301,0);
+		if (life == 0) {
+			showscore->setString("Gameover!");
+		}
+			
+	}
+	if (cd > 0 && (ball->getPosition().y>sh - sb / 2)) {
 		cd = -mball;
 		balldir = -balldir;
+		audio->playEffect("boop.mp3");
 	}
-	else if (cd>0 && (ball->getPosition().x<sb / 2 || ball->getPosition().x>sw-sb/2)) {
+	else if (cd > 0 && (ball->getPosition().x<sb / 2 || ball->getPosition().x>sw - sb / 2)) {
 		cd = -mball;
 		balldir = -balldir + M_PI;
+		audio->playEffect("boop.mp3");
 	}
 	else if (blockdie) {
-		auto balls = cocos2d::Sprite::create("ball.png");
-		balls->setAnchorPoint(Vec2(0.5, 0.0));
-		balls->setPosition(ball->getPosition());
-		this->addChild(balls);
-		auto le = std::abs(blocks.at(boo)->getPosition().x-bw/2 - ball->getPosition().x);
-		auto ri = std::abs(blocks.at(boo)->getPosition().x+bw/2 - ball->getPosition().x);
-		auto to = std::abs(blocks.at(boo)->getPosition().y+bh/2 - ball->getPosition().y);
-		auto bo = std::abs(blocks.at(boo)->getPosition().y-bh/2 - ball->getPosition().y);
-		auto min = std::min(le, std::min(ri, std::min(to, bo)));
-		if (min == le || min == ri) {
-			cd = -mball;
+		audio->playEffect("boop.mp3");
+		auto leri = std::abs(blocks.at(boo)->getPosition().x - ball->getPosition().x);
+		auto updo = std::abs(blocks.at(boo)->getPosition().y - ball->getPosition().y);
+		if (cd > 0 && updo < (bh / 2)) {
 			balldir = -balldir + M_PI;
-			CCLOG("PARR");
 		}
-		else if (min == to || min == bo) {
-			cd = -mball;
+		else if (cd > 0 && leri < (bw / 2) ) {
 			balldir = -balldir;
-			CCLOG("ORT");
+		}
+		if (leri == bw/2){
+			balldir = -balldir;
+		}
+		else if (updo == bh/2) {
+			balldir = -balldir + M_PI;
+		}
+		cd = -mball;
+		this->removeChild(blocks.at(boo));
+		blocks.erase(blocks.begin() + boo);
+		if (blocks.size() == 0) {
+			showscore->setString("You win!");
+			life = -1;
 		}
 	}
 	//check paddle collide and bounce off using - complement - arctan(derivative sqrt(1-x^2)) where x=(padcenter-ballcenter)/padsize (assuming ball is point particle)
 	else if (cd>0 && doesCollide(ball->getPosition(), sprite->getPosition())) {
-		cd = -mball;
-		balldir = -balldir - atan(-(retardationConstant*(sprite->getPosition().x- ball->getPosition().x)/ss) / sqrt(1-pow(retardationConstant*(sprite->getPosition().x- ball->getPosition().x)/ss, 2)));
+		cd = -mball-mpad;
+		balldir = -balldir - atan(-((sprite->getPosition().x- ball->getPosition().x)/ss) / sqrt(1-pow((sprite->getPosition().x- ball->getPosition().x)/ss, 2)));
+		audio->playEffect("boop.mp3");
 	}
 	//move paddle and ball
 	if (left && !right)

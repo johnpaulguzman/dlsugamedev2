@@ -13,6 +13,7 @@ public:
 	cocos2d::Sprite* sprite = cocos2d::Sprite::create("bumper.png");
 	cocos2d::Sprite* bg = cocos2d::Sprite::create("walls.png");
 	cocos2d::Sprite* ball = cocos2d::Sprite::create("ball.png");
+	cocos2d::Label* showscore = cocos2d::Label::createWithSystemFont("Lives: 10", "Arial", 20);
 	std::vector<cocos2d::Sprite*> blocks;
 	int bh = 30;
 	int bw = 100;
@@ -20,14 +21,15 @@ public:
 	float initdir = M_PI / 180.0 * 270;
 	bool left = false;
 	bool right = false;
-	float balldir = initdir;
-	float mpad = 5;
-	float mball = 5;
+	float balldir = sqrt(-1);
+	float mpad = 2.75;
+	float mball = 3.5;
 	float ss = 80.0;
 	float sb = 10.0;
 	int cd = 5;
 	int sw = 1200;
 	int sh = 600;
+	int life = 10;
     static cocos2d::Scene* createScene();
     virtual bool init();
 
